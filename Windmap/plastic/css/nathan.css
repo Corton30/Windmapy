@@ -1,0 +1,135 @@
+/* Reset global pour annuler les marges parasites du navigateur */
+* {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+}
+
+body, html {
+    width: 100vw;
+    height: 100vh;
+    background-color: #050f1e;   /* pour fond plus clair */
+    /*background-color: #030811;  Fond très sombre  */
+    font-family: 'Segoe UI', system-ui, sans-serif;
+    color: #e6f1ff;
+    overflow: hidden;
+    
+    /* Transforme l'écran entier en conteneur qui centre son contenu */
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+/* Conteneur plein écran pour centrer la sphère 3D */
+#ma-carte {
+    position: absolute;
+    top: 0; 
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+#controles {
+    position: absolute;
+    top: 20px;      
+    right: 20px;    
+    z-index: 20;
+    background: rgba(18, 18, 20, 0.9); 
+    backdrop-filter: blur(10px);
+    border: 1px solid rgba(255, 255, 255, 0.08); 
+    border-radius: 10px;
+    
+    padding: 16px 20px;  /* Ajustement de la hauteur / aération */
+    width: 280px;
+    box-shadow: 0 10px 30px rgba(0,0,0,0.7);
+
+    display: flex;
+    flex-direction: column;
+    align-items: stretch; 
+    gap: 14px; 
+}
+
+h1, p, label, .note {
+    text-align: left;
+}
+
+h1 {
+    font-size: 1.15rem;
+    color: #00e5ff;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    line-height: 1.2;
+}
+
+.description {
+    font-size: 0.8rem;
+    color: #8892b0;
+    line-height: 1.4;
+}
+
+/* Groupe slider + texte */
+.control-group {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    background: rgba(0, 0, 0, 0.2);
+    padding: 12px;
+    border-radius: 8px;
+    border: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+label {
+    font-size: 0.85rem;
+    font-weight: 600;
+    color: #ccd6f6;
+}
+
+#particle-count-display {
+    color: #ffea00; 
+    font-weight: 700;
+}
+
+input[type=range] {
+    width: 100%;
+    accent-color: #00e5ff;
+    cursor: pointer;
+}
+
+button {
+    width: 100%;
+    background: rgba(0, 229, 255, 0.05);
+    border: 1px solid #00e5ff;
+    color: #00e5ff;
+    padding: 12px;
+    border-radius: 8px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    font-size: 0.85rem;
+}
+
+button:hover {
+    background: rgba(0, 229, 255, 0.15);
+    box-shadow: 0 0 15px rgba(0, 229, 255, 0.2);
+}
+
+.tuto {
+    font-size: 0.75rem;
+    color: #8892b0;
+    opacity: 0.8;
+}
+
+.note {
+    font-size: 0.75rem;
+    color: #a0c8d8;
+    background: rgba(0, 0, 0, 0.4);
+    padding: 12px;
+    border-radius: 8px;
+    border-left: 3px solid #00e5ff; 
+    line-height: 1.4;
+}

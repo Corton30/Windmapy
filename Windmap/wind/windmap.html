@@ -1,0 +1,527 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Windmap — Hanae Charara</title>
+  <script src="https://d3js.org/d3.v7.min.js"></script>
+  <style>
+    html, body { height: 100%; margin: 0; font-family: system-ui, sans-serif; background: #050510; }
+
+    /* ===== UI LIGNE 1 : titre + switcher ===== */
+    #uiTop {
+      position: fixed; left: 12px; top: 12px; z-index: 20;
+      background: rgba(10,10,20,0.88); border: 1px solid rgba(255,255,255,0.12);
+      border-radius: 12px; padding: 8px 14px;
+      display: flex; gap: 10px; align-items: center;
+      box-shadow: 0 4px 16px rgba(0,0,0,0.4); backdrop-filter: blur(8px);
+    }
+    #uiTop strong { font-size: 14px; color: #fff; }
+    #viewSwitcher { display: flex; gap: 3px; background: rgba(255,255,255,0.08); border-radius: 8px; padding: 3px; }
+    .vBtn { font-size: 12px; color: rgba(255,255,255,0.55); background: none; border: none;
+            border-radius: 6px; padding: 4px 14px; cursor: pointer; transition: all 0.2s; }
+    .vBtn.active { background: rgba(255,255,255,0.2); color: #fff; font-weight: 500; }
+
+    /* ===== UI LIGNE 2 : couche + statut ===== */
+    #uiBottom {
+      position: fixed; left: 12px; top: 56px; z-index: 20;
+      background: rgba(10,10,20,0.88); border: 1px solid rgba(255,255,255,0.12);
+      border-radius: 12px; padding: 8px 14px;
+      display: flex; gap: 10px; align-items: center; flex-wrap: wrap;
+      box-shadow: 0 4px 16px rgba(0,0,0,0.4); backdrop-filter: blur(8px);
+    }
+    select { font-size: 13px; background: rgba(255,255,255,0.1); color: #fff;
+             border: 1px solid rgba(255,255,255,0.2); border-radius: 8px;
+             padding: 3px 8px; cursor: pointer; }
+    select option { background: #1a1a2e; color: #fff; }
+    #dataStatus { font-size: 11px; color: rgba(255,255,255,0.5); }
+    #particleControls { display: none; gap: 10px; align-items: center; }
+    #particleControls label { font-size: 12px; color: rgba(255,255,255,0.7); }
+    #particleControls input[type="range"] { width: 80px; }
+
+    /* ===== HUD ===== */
+    #hud {
+      position: fixed; right: 12px; top: 12px; z-index: 20;
+      background: rgba(10,10,20,0.88); color: #fff;
+      border: 1px solid rgba(255,255,255,0.12);
+      border-radius: 12px; padding: 10px 14px;
+      font-size: 13px; line-height: 1.6; max-width: 240px;
+      white-space: pre-line; backdrop-filter: blur(8px);
+    }
+
+    /* ===== LÉGENDE ===== */
+    #legend {
+      position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%);
+      z-index: 20; background: rgba(10,10,20,0.88);
+      border: 1px solid rgba(255,255,255,0.12);
+      border-radius: 10px; padding: 10px 18px; color: #fff; font-size: 12px;
+      display: none; flex-direction: column; align-items: center; gap: 5px;
+      min-width: 240px; backdrop-filter: blur(8px);
+    }
+    #legendBar { width: 100%; height: 10px; border-radius: 5px; }
+    #legendLabels { width: 100%; display: flex; justify-content: space-between; font-size: 11px; color: #aaa; }
+    #legendTitle { font-size: 12px; font-weight: 500; }
+
+    /* ===== VUE GLOBE ===== */
+    #globeView { position: fixed; inset: 0; z-index: 1; display: block; }
+    #pCanvas3D { position: fixed; inset: 0; pointer-events: none; z-index: 3; mix-blend-mode: screen; }
+
+    /* ===== VUE PLATE ===== */
+    #flatView { position: fixed; inset: 0; z-index: 1; display: none; }
+    #rasterCanvas { position: absolute; inset: 0; width: 100%; height: 100%; }
+    #pCanvas2D { position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none; mix-blend-mode: screen; }
+    #svgOverlay { position: absolute; inset: 0; width: 100%; height: 100%; }
+  </style>
+</head>
+<body>
+
+  <!-- UI ligne 1 -->
+  <div id="uiTop">
+    <strong>Windmap</strong>
+    <div id="viewSwitcher">
+      <button class="vBtn active" id="btn3D" onclick="switchView('globe')"> Carte Globe</button>
+      <button class="vBtn" id="btn2D" onclick="switchView('flat')"> Carte plate</button>
+    </div>
+  </div>
+
+  <!-- UI ligne 2 -->
+  <div id="uiBottom">
+    <label style="color:rgba(255,255,255,0.7);font-size:13px;">Couche
+      <select id="layer">
+        <option value="temp">Température</option>
+        <option value="pressure">Pression</option>
+        <option value="wind">Vent (particules)</option>
+      </select>
+    </label>
+    <span id="dataStatus"></span>
+    <span id="particleControls">
+      <label>Particules
+        <input id="nbParticles" type="range" min="500" max="8000" step="500" value="3000"/>
+        <span id="nbLabel" style="color:#38bdf8;font-size:12px;">3000</span>
+      </label>
+      <label>Vitesse
+        <input id="speedScale" type="range" min="1" max="20" step="1" value="5" style="width:70px"/>
+      </label>
+    </span>
+  </div>
+
+  <div id="hud">Chargement…</div>
+
+  <div id="legend">
+    <div id="legendTitle"></div>
+    <canvas id="legendBar" width="220" height="10"></canvas>
+    <div id="legendLabels">
+      <span id="legendMin"></span>
+      <span id="legendMid"></span>
+      <span id="legendMax"></span>
+    </div>
+  </div>
+
+  <!-- Globe 3D -->
+  <div id="globeView"></div>
+  <canvas id="pCanvas3D"></canvas>
+
+  <!-- Carte plate -->
+  <div id="flatView">
+    <canvas id="rasterCanvas"></canvas>
+    <canvas id="pCanvas2D"></canvas>
+    <svg id="svgOverlay"></svg>
+  </div>
+
+  <script type="importmap">
+    { "imports": {
+        "three": "https://unpkg.com/three@0.160.0/build/three.module.js",
+        "three/addons/": "https://unpkg.com/three@0.160.0/examples/jsm/"
+    }}
+  </script>
+
+  <script type="module">
+    import * as THREE from "three";
+    import { OrbitControls } from "three/addons/controls/OrbitControls.js";
+
+    // ===== DOM =====
+    const hud         = document.getElementById("hud");
+    const layerSel    = document.getElementById("layer");
+    const pControls   = document.getElementById("particleControls");
+    const nbSlider    = document.getElementById("nbParticles");
+    const nbLabel     = document.getElementById("nbLabel");
+    const speedSlider = document.getElementById("speedScale");
+    const dataStatus  = document.getElementById("dataStatus");
+    const legend      = document.getElementById("legend");
+    const legendBar   = document.getElementById("legendBar");
+    const legendMin   = document.getElementById("legendMin");
+    const legendMid   = document.getElementById("legendMid");
+    const legendMax   = document.getElementById("legendMax");
+    const legendTitle = document.getElementById("legendTitle");
+
+    // Canvas globe
+    const pCanvas3D = document.getElementById("pCanvas3D");
+    const pCtx3D    = pCanvas3D.getContext("2d");
+
+    // Canvas carte plate
+    const rasterEl  = document.getElementById("rasterCanvas");
+    const rctx      = rasterEl.getContext("2d");
+    const pCanvas2D = document.getElementById("pCanvas2D");
+    const pCtx2D    = pCanvas2D.getContext("2d");
+    const svgEl     = d3.select("#svgOverlay");
+
+    // ===== ÉTAT =====
+    let currentView = "globe";
+    let meta = null, cache = {}, cities = [];
+    let u10Arr = null, v10Arr = null, maxWindSpeed = 20;
+    let currentTi = 0, maxTi = 0;
+    let particles = [], animRunning = false;
+    let flatProjection, flatPath, zoomTransform = d3.zoomIdentity;
+
+    // ===== UTILS =====
+    const clamp = (x,a,b) => Math.max(a, Math.min(b, x));
+
+    function turboApprox(t) {
+      t=clamp(t,0,1);
+      return [Math.round(clamp(1.5*t-0.2,0,1)*255),Math.round(clamp(1.2*Math.sin(Math.PI*t),0,1)*255),Math.round(clamp(1.2*(1-t)-0.1,0,1)*255)];
+    }
+    function tempPalette(t) {
+      t=clamp(t,0,1); let r,g,b;
+      if(t<0.25){const s=t/0.25;r=0;g=Math.round(s*100);b=Math.round(180+s*75);}
+      else if(t<0.5){const s=(t-0.25)/0.25;r=0;g=Math.round(100+s*155);b=Math.round(255*(1-s));}
+      else if(t<0.75){const s=(t-0.5)/0.25;r=Math.round(s*255);g=255;b=0;}
+      else{const s=(t-0.75)/0.25;r=255;g=Math.round(255*(1-s));b=0;}
+      return [r,g,b];
+    }
+    function speedColor(speed,maxS) {
+      const t=clamp(speed/maxS,0,1); let r,g,b;
+      if(t<0.33){const s=t/0.33;r=0;g=Math.round(s*220);b=Math.round(180+s*75);}
+      else if(t<0.66){const s=(t-0.33)/0.33;r=Math.round(s*255);g=Math.round(220+s*35);b=Math.round(255*(1-s));}
+      else{const s=(t-0.66)/0.34;r=255;g=Math.round(255-s*55);b=Math.round(s*255);}
+      return [r,g,b];
+    }
+    function getPalette(kind) { return kind==="temp"?tempPalette:turboApprox; }
+
+    function sampleGrid(arr,lon,lat) {
+      const [nlat,nlon]=meta.shape;
+      const fx=(lon-meta.lon.min)/(meta.lon.max-meta.lon.min)*(nlon-1);
+      const fy=(meta.lat.max-lat)/(meta.lat.max-meta.lat.min)*(nlat-1);
+      const x0=clamp(Math.floor(fx),0,nlon-1),x1=clamp(x0+1,0,nlon-1);
+      const y0=clamp(Math.floor(fy),0,nlat-1),y1=clamp(y0+1,0,nlat-1);
+      const tx=fx-x0,ty=fy-y0;
+      return (arr[y0*nlon+x0]*(1-tx)+arr[y0*nlon+x1]*tx)*(1-ty)+(arr[y1*nlon+x0]*(1-tx)+arr[y1*nlon+x1]*tx)*ty;
+    }
+
+    function drawLegend(kind,vmin,vmax,unit) {
+      legend.style.display="flex";
+      const names={temp:"Température",pressure:"Pression",wind:"Vitesse du vent"};
+      legendTitle.textContent=`${names[kind]||kind} (${unit})`;
+      const palette=getPalette(kind);
+      const ctx=legendBar.getContext("2d"),W=legendBar.width;
+      for(let i=0;i<W;i++){const[r,g,b]=palette(i/W);ctx.fillStyle=`rgb(${r},${g},${b})`;ctx.fillRect(i,0,1,legendBar.height);}
+      legendMin.textContent=vmin.toFixed(1)+" "+unit;
+      legendMid.textContent=((vmin+vmax)/2).toFixed(1)+" "+unit;
+      legendMax.textContent=vmax.toFixed(1)+" "+unit;
+    }
+
+    // ===== DATA =====
+    async function loadMeta() { meta=await (await fetch("./data/grids/meta.json?t="+Date.now())).json(); }
+    async function loadGrid(kind,ti) {
+      cache[kind]||={};
+      if(cache[kind][ti]) return cache[kind][ti];
+      const res=await fetch(`./data/grids/${kind}_${ti}.bin`);
+      if(!res.ok) return null;
+      cache[kind][ti]=new Float32Array(await res.arrayBuffer());
+      return cache[kind][ti];
+    }
+    async function loadCities() {
+      const res=await fetch("./data/cities.json"); if(!res.ok) return;
+      cities=(await res.json()).filter(c=>c?.lat&&c?.lon&&c?.name).map(c=>({name:String(c.name),country:c.country||"",lat:+c.lat,lon:+c.lon}));
+    }
+    function findNearestCity(lon,lat) {
+      let best=null,bestD=Infinity;
+      for(const c of cities){const d=(lon-c.lon)**2+(lat-c.lat)**2;if(d<bestD){bestD=d;best=c;}}
+      return bestD<25?best:null;
+    }
+
+    // ===== SWITCHER =====
+    window.switchView = function(view) {
+      currentView = view;
+      document.getElementById("globeView").style.display = view==="globe" ? "block" : "none";
+      pCanvas3D.style.display = view==="globe" ? "block" : "none";
+      document.getElementById("flatView").style.display = view==="flat" ? "block" : "none";
+      document.getElementById("btn3D").classList.toggle("active", view==="globe");
+      document.getElementById("btn2D").classList.toggle("active", view==="flat");
+      stopParticles();
+      if(view==="flat") { resizeFlat(); }
+      loadAndRender(currentTi);
+    }
+
+    // ==========================================
+    // ===== GLOBE 3D =====
+    // ==========================================
+    function resizeGlobe() { pCanvas3D.width=innerWidth; pCanvas3D.height=innerHeight; }
+    resizeGlobe();
+
+    const scene=new THREE.Scene();
+    const camera=new THREE.PerspectiveCamera(45,innerWidth/innerHeight,0.1,1000);
+    camera.position.set(0,0,3.2);
+    const renderer=new THREE.WebGLRenderer({antialias:true,alpha:true});
+    renderer.setClearColor(0x000000,0);
+    renderer.setSize(innerWidth,innerHeight);
+    renderer.setPixelRatio(Math.min(2,devicePixelRatio));
+    document.getElementById("globeView").appendChild(renderer.domElement);
+    const orbitCtrl=new OrbitControls(camera,renderer.domElement);
+    orbitCtrl.enableDamping=true;orbitCtrl.minDistance=1.6;orbitCtrl.maxDistance=8;
+    scene.add(new THREE.AmbientLight(0xffffff,0.9));
+    const dirLight=new THREE.DirectionalLight(0xffffff,0.5);dirLight.position.set(3,3,3);scene.add(dirLight);
+
+    const R=1.25;
+    const globeGeo=new THREE.SphereGeometry(R,128,64);
+    const globeMat=new THREE.MeshPhongMaterial({transparent:true,opacity:0.97});
+    const globe=new THREE.Mesh(globeGeo,globeMat);scene.add(globe);
+
+    let currentTex=null,targetTex=null,blendAlpha=1.0;
+    const blendMat=new THREE.MeshPhongMaterial({transparent:true,opacity:0});
+    const blendGlobe=new THREE.Mesh(globeGeo,blendMat);blendGlobe.visible=false;scene.add(blendGlobe);
+
+    function lonLatToXYZ(lon,lat,r){const phi=(90-lat)*Math.PI/180,theta=(lon+180)*Math.PI/180;return new THREE.Vector3(-r*Math.sin(phi)*Math.cos(theta),r*Math.cos(phi),r*Math.sin(phi)*Math.sin(theta));}
+    function xyzToLonLat(p){const r=p.length(),lat=Math.asin(clamp(p.y/r,-1,1))*180/Math.PI;const theta=Math.atan2(p.z,-p.x),lon=theta*180/Math.PI-180;return[((lon+180)%360)-180,lat];}
+
+    function setTextureSmoothly(newTex){if(!currentTex){globeMat.map=newTex;globeMat.needsUpdate=true;currentTex=newTex;return;}targetTex=newTex;blendMat.map=newTex;blendMat.opacity=0;blendMat.needsUpdate=true;blendGlobe.visible=true;blendAlpha=0;}
+    function updateBlend(){if(!blendGlobe.visible)return;blendAlpha+=0.025;if(blendAlpha>=1){globeMat.map=targetTex;globeMat.needsUpdate=true;currentTex=targetTex;blendGlobe.visible=false;blendMat.opacity=0;}else{blendMat.opacity=blendAlpha*0.97;blendMat.needsUpdate=true;}}
+
+    function makeTexture(arr,kind){
+      const[nlat,nlon]=meta.shape,v=meta.vars[kind],palette=getPalette(kind);
+      const cvs=document.createElement("canvas");cvs.width=nlon;cvs.height=nlat;
+      const ctx=cvs.getContext("2d"),img=ctx.createImageData(nlon,nlat);
+      for(let i=0;i<arr.length;i++){const[rv,gv,bv]=palette((arr[i]-v.vmin)/(v.vmax-v.vmin));img.data[i*4]=rv;img.data[i*4+1]=gv;img.data[i*4+2]=bv;img.data[i*4+3]=220;}
+      ctx.putImageData(img,0,0);
+      const tex=new THREE.CanvasTexture(cvs);tex.colorSpace=THREE.SRGBColorSpace;return tex;
+    }
+
+    async function addGlobeBorders(){
+      const res=await fetch("https://raw.githubusercontent.com/holtzy/D3-graph-gallery/master/DATA/world.geojson");
+      if(!res.ok)return;
+      const geo=await res.json();
+      function addTubeLine(coords){
+        for(let i=0;i<coords.length-1;i++){
+          const a=lonLatToXYZ(coords[i][0],coords[i][1],R*1.003);
+          const b=lonLatToXYZ(coords[i+1][0],coords[i+1][1],R*1.003);
+          if(a.distanceTo(b)>0.3)continue;
+          const mid=new THREE.Vector3().addVectors(a,b).multiplyScalar(0.5).normalize();
+          const path=new THREE.LineCurve3(a,b);
+          const tg=new THREE.TubeGeometry(path,1,0.0018,4,false);
+          const mat=new THREE.MeshBasicMaterial({color:0xffffff,transparent:true,opacity:0.9});
+          const mesh=new THREE.Mesh(tg,mat);
+          mesh.userData.midNormal=mid;
+          scene.add(mesh);
+        }
+      }
+      for(const f of geo.features){if(!f.geometry)continue;if(f.geometry.type==="Polygon")for(const r of f.geometry.coordinates)addTubeLine(r);else if(f.geometry.type==="MultiPolygon")for(const p of f.geometry.coordinates)for(const r of p)addTubeLine(r);}
+    }
+
+    const raycaster=new THREE.Raycaster(),mouse=new THREE.Vector2();
+    window.addEventListener("mousemove",ev=>{
+      if(currentView!=="globe")return;
+      const r=renderer.domElement.getBoundingClientRect();
+      mouse.x=((ev.clientX-r.left)/r.width)*2-1;
+      mouse.y=-((ev.clientY-r.top)/r.height)*2+1;
+    });
+
+    // ==========================================
+    // ===== CARTE PLATE =====
+    // ==========================================
+    function resizeFlat(){
+      const W=innerWidth,H=innerHeight;
+      rasterEl.width=W;rasterEl.height=H;
+      pCanvas2D.width=W;pCanvas2D.height=H;
+      svgEl.attr("viewBox",`0 0 ${W} ${H}`);
+      flatProjection=d3.geoEquirectangular().translate([W/2,H/2]).scale(W/(2*Math.PI));
+      flatPath=d3.geoPath(flatProjection);
+    }
+
+    async function addFlatBorders(){
+      const res=await fetch("https://raw.githubusercontent.com/holtzy/D3-graph-gallery/master/DATA/world.geojson");
+      if(!res.ok)return;
+      const world=await res.json();
+      const g=svgEl.append("g").attr("id","flatBorders");
+      g.selectAll("path").data(world.features).join("path")
+        .attr("d",flatPath).attr("fill","none")
+        .attr("stroke","rgba(255,255,255,0.95)").attr("stroke-width",1.5);
+      const zoom=d3.zoom().scaleExtent([1,8]).on("zoom",(event)=>{
+        zoomTransform=event.transform;
+        svgEl.select("#flatBorders").attr("transform",zoomTransform);
+        if(animRunning){
+          pCtx2D.clearRect(0,0,pCanvas2D.width,pCanvas2D.height);
+          particles.forEach(p=>{p.px=-1;p.py=-1;});
+        }
+        renderFlat();
+      });
+      svgEl.call(zoom);
+      svgEl.on("mousemove",(event)=>{
+        if(currentView!=="flat"||!meta)return;
+        const[mx,my]=d3.pointer(event,svgEl.node());
+        const zx=(mx-zoomTransform.x)/zoomTransform.k,zy=(my-zoomTransform.y)/zoomTransform.k;
+        const ll=flatProjection.invert([zx,zy]);if(!ll)return;
+        const[lon,lat]=ll;const kind=layerSel.value;
+        if(kind==="wind"&&u10Arr&&v10Arr){
+          const uu=sampleGrid(u10Arr,lon,lat),vv=sampleGrid(v10Arr,lon,lat);
+          hud.textContent=`lon=${lon.toFixed(1)} lat=${lat.toFixed(1)}\nspeed=${Math.hypot(uu,vv).toFixed(2)} m/s`;
+        } else {
+          const arr=cache[kind]?.[currentTi];
+          if(arr&&meta.vars[kind]){
+            const c=findNearestCity(lon,lat);const val=sampleGrid(arr,lon,lat);
+            hud.textContent=`${c?c.name+(c.country?" ("+c.country+")":""):"lon="+lon.toFixed(1)+" lat="+lat.toFixed(1)}\n${kind}=${val.toFixed(2)} ${meta.vars[kind].unit||""}`;
+          }
+        }
+      });
+    }
+
+    function renderFlat(){
+      if(!meta)return;
+      const kind=layerSel.value;
+      let arr;
+      if(kind==="wind"){
+        if(!u10Arr||!v10Arr)return;
+        arr=new Float32Array(u10Arr.length);
+        for(let i=0;i<arr.length;i++)arr[i]=Math.hypot(u10Arr[i],v10Arr[i]);
+      } else { arr=cache[kind]?.[currentTi]; }
+      if(!arr)return;
+      const[nlat,nlon]=meta.shape,v=meta.vars[kind],palette=getPalette(kind);
+      const cvs=document.createElement("canvas");cvs.width=nlon;cvs.height=nlat;
+      const ctx=cvs.getContext("2d"),img=ctx.createImageData(nlon,nlat);
+      for(let i=0;i<arr.length;i++){
+        const[rv,gv,bv]=palette((arr[i]-v.vmin)/(v.vmax-v.vmin));
+        img.data[i*4]=rv;img.data[i*4+1]=gv;img.data[i*4+2]=bv;img.data[i*4+3]=210;
+      }
+      ctx.putImageData(img,0,0);
+      rctx.setTransform(1,0,0,1,0,0);rctx.clearRect(0,0,innerWidth,innerHeight);
+      rctx.setTransform(zoomTransform.k,0,0,zoomTransform.k,zoomTransform.x,zoomTransform.y);
+      rctx.drawImage(cvs,0,0,innerWidth,innerHeight);
+      rctx.setTransform(1,0,0,1,0,0);
+    }
+
+    // ==========================================
+    // ===== PARTICULES (communes) =====
+    // ==========================================
+    const _v3=new THREE.Vector3();
+    function projectToScreen3D(lon,lat){_v3.copy(lonLatToXYZ(lon,lat,R*1.003)).project(camera);if(_v3.z>1)return null;return[(_v3.x*0.5+0.5)*pCanvas3D.width,(-_v3.y*0.5+0.5)*pCanvas3D.height];}
+    function isFacingCamera(lon,lat){return lonLatToXYZ(lon,lat,1).dot(camera.position.clone().normalize())>0.08;}
+    function projectToScreen2D(lon,lat){if(!flatProjection)return null;const[px,py]=flatProjection([lon,lat]);const sx=px*zoomTransform.k+zoomTransform.x,sy=py*zoomTransform.k+zoomTransform.y;if(sx<0||sx>innerWidth||sy<0||sy>innerHeight)return null;return[sx,sy];}
+
+    function stopParticles(){
+      animRunning=false;
+      pCtx3D.clearRect(0,0,pCanvas3D.width,pCanvas3D.height);
+      pCtx2D.clearRect(0,0,pCanvas2D.width,pCanvas2D.height);
+      particles=[];
+    }
+    function initParticles(){
+      stopParticles();
+      particles=Array.from({length:Number(nbSlider.value)},()=>({lon:Math.random()*360-180,lat:Math.random()*160-80,age:Math.floor(Math.random()*100),px:-1,py:-1}));
+      animRunning=true;
+    }
+
+    function stepParticles(){
+      if(!animRunning||!u10Arr||!v10Arr)return;
+      const speedScale=Number(speedSlider.value)*0.02,MAX_AGE=200;
+      const is3D=currentView==="globe";
+      const pCtx=is3D?pCtx3D:pCtx2D;
+      const W=is3D?pCanvas3D.width:innerWidth,H=is3D?pCanvas3D.height:innerHeight;
+      pCtx.globalCompositeOperation="source-over";
+      pCtx.fillStyle="rgba(0,0,0,0.04)";
+      pCtx.fillRect(0,0,W,H);
+      for(const p of particles){
+        const uu=sampleGrid(u10Arr,p.lon,p.lat),vv=sampleGrid(v10Arr,p.lon,p.lat),speed=Math.hypot(uu,vv);
+        const cosLat=Math.max(0.01,Math.cos(p.lat*Math.PI/180));
+        const newLon=p.lon+(uu/(111000*cosLat))*speedScale*3600,newLat=p.lat+(vv/111000)*speedScale*3600;
+        p.age++;
+        if(p.age>MAX_AGE||newLat<-80||newLat>80){p.lon=Math.random()*360-180;p.lat=Math.random()*160-80;p.age=0;p.px=-1;p.py=-1;continue;}
+        let sc;
+        if(is3D){if(!isFacingCamera(p.lon,p.lat)){p.lon=newLon;p.lat=newLat;if(p.lon>180)p.lon-=360;if(p.lon<-180)p.lon+=360;p.px=-1;p.py=-1;continue;}sc=projectToScreen3D(newLon,newLat);}
+        else{sc=projectToScreen2D(newLon,newLat);}
+        if(!sc){p.px=-1;p.py=-1;p.lon=newLon;p.lat=newLat;if(p.lon>180)p.lon-=360;if(p.lon<-180)p.lon+=360;continue;}
+        const[nx,ny]=sc;
+        if(p.px>=0&&p.py>=0){const dist=Math.hypot(nx-p.px,ny-p.py);if(dist<60&&dist>0.1){const t=clamp(speed/maxWindSpeed,0,1),alpha=clamp(p.age/20,0,1);const[r,g,b]=speedColor(speed,maxWindSpeed);pCtx.globalCompositeOperation="screen";pCtx.beginPath();pCtx.moveTo(p.px,p.py);pCtx.lineTo(nx,ny);pCtx.strokeStyle=`rgba(${r},${g},${b},${alpha})`;pCtx.lineWidth=1.2+t*2.0;pCtx.stroke();}}
+        p.px=nx;p.py=ny;p.lon=newLon;p.lat=newLat;if(p.lon>180)p.lon-=360;if(p.lon<-180)p.lon+=360;
+      }
+    }
+
+    // ==========================================
+    // ===== RENDU COMMUN =====
+    // ==========================================
+    async function loadAndRender(ti){
+      const kind=layerSel.value;
+      if(kind==="wind"){
+        u10Arr=await loadGrid("u10",ti);v10Arr=await loadGrid("v10",ti);
+        if(!u10Arr||!v10Arr)return;
+        let mx=0;for(let i=0;i<u10Arr.length;i++){const s=Math.hypot(u10Arr[i],v10Arr[i]);if(s>mx)mx=s;}
+        maxWindSpeed=mx||20;
+        const speed=new Float32Array(u10Arr.length);for(let i=0;i<u10Arr.length;i++)speed[i]=Math.hypot(u10Arr[i],v10Arr[i]);
+        meta.vars.wind={unit:"m/s",vmin:0,vmax:maxWindSpeed};
+        drawLegend("wind",0,maxWindSpeed,"m/s");
+        if(currentView==="globe"){setTextureSmoothly(makeTexture(speed,"wind"));}
+        else{renderFlat();}
+        if(!animRunning)initParticles();
+      } else {
+        stopParticles();u10Arr=null;v10Arr=null;
+        const arr=await loadGrid(kind,ti);if(!arr)return;
+        const v=meta.vars[kind];drawLegend(kind,v.vmin,v.vmax,v.unit||"");
+        if(currentView==="globe"){setTextureSmoothly(makeTexture(arr,kind));}
+        else{renderFlat();}
+      }
+    }
+
+    // ===== POLLING =====
+    async function pollStatus(){
+      try{
+        const res=await fetch("/api/status");if(!res.ok)return;
+        const s=await res.json();
+        if(s.status==="updating"){dataStatus.textContent="⟳ Mise à jour...";dataStatus.style.color="#f59e0b";}
+        else if(s.status==="ok"){const t=new Date(s.last_update);dataStatus.textContent=`✓ ${t.toLocaleTimeString("fr-FR",{hour:"2-digit",minute:"2-digit"})} UTC`;dataStatus.style.color="#4ade80";if((Date.now()-t.getTime())<15000){cache={};await loadMeta();maxTi=meta.times.length-1;await loadAndRender(currentTi);}}
+        else{dataStatus.textContent="✗ Erreur";dataStatus.style.color="#f87171";}
+      }catch{dataStatus.textContent="";}
+    }
+    pollStatus();setInterval(pollStatus,30000);
+
+    function tick(){
+      orbitCtrl.update();updateBlend();
+      if(animRunning)stepParticles();
+      // Cacher les frontières derrière le globe
+      const camDir=camera.position.clone().normalize();
+      scene.children.forEach(obj=>{
+        if(obj.userData.midNormal){
+          obj.visible=obj.userData.midNormal.dot(camDir)>0;
+        }
+      });
+      if(currentView==="globe"&&meta){
+        raycaster.setFromCamera(mouse,camera);
+        const hits=raycaster.intersectObject(globe,false);
+        if(hits.length){
+          let[lon,lat]=xyzToLonLat(hits[0].point);lon=((lon+180)%360)-180;
+          const kind=layerSel.value;
+          if(kind==="wind"&&u10Arr&&v10Arr){const uu=sampleGrid(u10Arr,lon,lat),vv=sampleGrid(v10Arr,lon,lat);hud.textContent=`lon=${lon.toFixed(1)} lat=${lat.toFixed(1)}\nspeed=${Math.hypot(uu,vv).toFixed(2)} m/s`;}
+          else{const arr=cache[kind]?.[currentTi];if(arr&&meta.vars[kind]){const c=findNearestCity(lon,lat);const val=sampleGrid(arr,lon,lat);hud.textContent=`${c?c.name+(c.country?" ("+c.country+")":""):"lon="+lon.toFixed(1)+" lat="+lat.toFixed(1)}\n${kind}=${val.toFixed(2)} ${meta.vars[kind].unit||""}`;}}
+        }
+      }
+      renderer.render(scene,camera);requestAnimationFrame(tick);
+    }
+
+    orbitCtrl.addEventListener("change",()=>{
+      if(currentView==="globe"&&animRunning){
+        pCtx3D.clearRect(0,0,pCanvas3D.width,pCanvas3D.height);
+        particles.forEach(p=>{p.px=-1;p.py=-1;});
+      }
+    });
+    layerSel.addEventListener("change",()=>{pControls.style.display=layerSel.value==="wind"?"flex":"none";loadAndRender(currentTi);});
+    nbSlider.addEventListener("input",()=>{nbLabel.textContent=nbSlider.value;if(animRunning)initParticles();});
+    window.addEventListener("resize",()=>{camera.aspect=innerWidth/innerHeight;camera.updateProjectionMatrix();renderer.setSize(innerWidth,innerHeight);resizeGlobe();if(currentView==="flat"){resizeFlat();renderFlat();}});
+
+    // ===== BOOT =====
+    (async()=>{
+      await loadMeta();await loadCities();
+      resizeFlat();
+      await addGlobeBorders();await addFlatBorders();
+      if(!meta.vars?.pressure)[...layerSel.options].forEach(o=>{if(o.value==="pressure")o.remove();});
+      maxTi=meta.times.length-1;
+      await loadAndRender(0);
+      tick();
+    })().catch(e=>{hud.textContent="Erreur: "+e.message;console.error(e);});
+  </script>
+</body>
+</html>

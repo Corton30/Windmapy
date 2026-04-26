@@ -1,0 +1,203 @@
+/* ========================================
+   STYLE.CSS - Feuille de style principale
+   
+   Contient :
+   - Variables de thème (couleurs, espacements)
+   - Layout global de l'application
+   - Style des contrôles et panneaux
+   - Responsive design pour mobile
+   ======================================== */
+
+/* === VARIABLES GLOBALES === */
+:root {
+	--bg: #f4f1ea;
+	--panel: #fffaf0;
+	--ink: #202428;
+	--muted: #5d6a73;
+	--line: #cfd6db;
+	--accent: #0d6e5f;
+}
+
+* {
+	box-sizing: border-box;
+}
+
+html,
+body {
+	margin: 0;
+	min-height: 100%;
+	font-family: "Avenir Next", "Segoe UI", sans-serif;
+	background: radial-gradient(circle at top left, #fff6d8 0%, var(--bg) 60%);
+	color: var(--ink);
+}
+
+/* === LAYOUT PRINCIPAL === */
+
+body {
+	min-height: 100vh;
+	padding: 0.5rem;
+	display: flex;
+}
+
+/* Conteneur principal (header + canvas) */
+.app-shell {
+	width: min(1400px, 100%);
+	margin: 0 auto;
+	display: grid;
+	gap: 0.5rem;
+	grid-template-rows: auto 1fr;
+	height: calc(100vh - 1rem);
+}
+
+/* === EN-TÊTE DE L'APPLICATION === */
+
+.app-header {
+	background: var(--panel);
+	border: 1px solid var(--line);
+	border-radius: 8px;
+	padding: 0.6rem 1rem;
+}
+
+.app-header h1 {
+	margin: 0;
+	font-size: 1.2rem;
+}
+
+.app-header p {
+	margin: 0.2rem 0 0;
+	color: var(--muted);
+	font-size: 0.9rem;
+}
+
+/* === PANNEAU DE CONTRÔLES === */
+
+.controls-panel {
+	background: var(--panel);
+	border: 1px solid var(--line);
+	border-radius: 8px;
+	padding: 0.5rem;
+	display: grid;
+	grid-template-columns: 1fr;
+	gap: 0.45rem;
+	width: min(240px, calc(100% - 1.2rem));
+	height: calc(100% - 1.2rem);
+	position: absolute;
+	right: 0.6rem;
+	left: auto;
+	top: 0.6rem;
+	z-index: 3;
+	box-shadow: 0 10px 30px rgba(0, 0, 0, 0.18);
+	backdrop-filter: blur(4px);
+	overflow: auto;
+	align-content: start;
+}
+
+.controls-panel label {
+	display: flex;
+	flex-direction: column;
+	gap: 0.25rem;
+	font-size: 0.8rem;
+	color: var(--muted);
+}
+
+.controls-panel select,
+.controls-panel button,
+.controls-panel input[type="range"] {
+	border: 1px solid var(--line);
+	border-radius: 6px;
+	padding: 0.3rem 0.45rem;
+	font: inherit;
+	color: var(--ink);
+	background: #ffffff;
+	width: 100%;
+}
+
+.controls-panel button {
+	background: var(--accent);
+	color: #fff;
+	border-color: var(--accent);
+	cursor: pointer;
+	height: fit-content;
+	align-self: end;
+}
+
+.player-controls {
+	display: grid;
+	grid-template-columns: repeat(7, minmax(0, 1fr));
+	gap: 0.3rem;
+	width: 100%;
+}
+
+.player-btn {
+	padding: 0.35rem 0 !important;
+	font-size: 0.85rem;
+	line-height: 1;
+}
+
+.player-main {
+	font-weight: 600;
+}
+
+.controls-grow {
+	grid-column: 1 / -1;
+}
+
+.frame-info {
+	font-size: 0.85rem;
+	color: var(--muted);
+	grid-column: 1 / -1;
+}
+
+.canvas-panel {
+	background: var(--panel);
+	border: 1px solid var(--line);
+	border-radius: 14px;
+	overflow: hidden;
+	width: 100%;
+	display: flex;
+	align-items: center;
+	justify-content: flex-start;
+	position: relative;
+	min-height: 420px;
+}
+
+#pitchCanvas {
+	display: block;
+	width: auto;
+	height: auto;
+	background: #7fb06d;
+	max-width: 100%;
+	max-height: 100%;
+	margin-left: clamp(140px, 8vw, 200px);
+	margin-right: 0;
+}
+
+/* === RESPONSIVE DESIGN (Mobile) === */
+
+@media (max-width: 768px) {
+	body {
+		padding: 0.75rem;
+	}
+
+	.controls-panel {
+		position: static;
+		width: 100%;
+		height: auto;
+		grid-template-columns: 1fr 1fr;
+		box-shadow: none;
+		backdrop-filter: none;
+	}
+
+	#pitchCanvas {
+		margin-left: 0;
+	}
+
+	.app-header h1 {
+		font-size: 1.2rem;
+	}
+
+	.frame-info {
+		width: 100%;
+		margin-left: 0;
+	}
+}

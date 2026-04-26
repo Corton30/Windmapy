@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Earth Data Analytics</title>
+    <link rel="stylesheet" href="style.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600&display=swap" rel="stylesheet">
+</head>
+<body>
+
+    <nav class="sidebar" id="sidebar">
+        <div class="brand">
+            <h1>Earth<span>Data</span></h1>
+        </div></br>
+        
+        <ul class="nav-links">
+            <li><button data-src="./revenue/index.html" class="active">Global Revenue</button></li>
+            <li><button data-src="./wind/windmap.html">Wind Streams</button></li>
+            <li><button data-src="./plastic/index.html">Microplastics</button></li>
+            <li><button data-src="./Football/index.html">Match Heatmaps</button></li>
+            <li><button id="sidebar-toggle" class="toggle-btn">☰</button></li>
+        </ul>
+
+        
+        
+        <div class="credits">
+            <p>Interactive Systems Project<br>Team 4</p>
+        </div>
+    </nav>
+
+    <main class="content">
+        <!-- <div id="loader" class="hidden">Loading System...</div> -->
+        <button id="floating-toggle" class="toggle-btn">☰</button>
+        
+        <iframe id="vis-frame" src="./revenue/index.html"></iframe>
+    </main>
+
+    <script src="router.js"></script>
+</body>
+</html>

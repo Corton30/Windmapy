@@ -1,0 +1,38 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Global Revenue - Particle Hybrid</title>
+    <link rel="stylesheet" href="style.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600&display=swap" rel="stylesheet">
+    <script src="https://d3js.org/d3.v7.min.js"></script>
+    <script src="https://d3js.org/d3-geo-projection.v4.min.js"></script>
+</head>
+<body>
+
+    <h1 id="main-title">Visualisation : Revenu mensuel moyen de chaque pays</h1>
+    
+    <div id="settings">
+        <div class="control-group">
+            <label for="particleMultiplier">
+                Particle Density: <span id="multiplierValue">1.0</span>x
+            </label>
+            <input type="range" id="particleMultiplier" min="1" max="8" value="1" step="0.10">
+        </div>
+        
+        <div class="control-group switch-group">
+            <label for="mode">Visualisation mode</label>
+            <label class="switch">
+                <input type="checkbox" id="mode">
+                <span class="slider round"></span>
+            </label>
+        </div>
+    </div>
+    
+    <div id="map"></div>
+
+    <script type="module" src="./main.js"></script>
+    
+</body>
+</html>

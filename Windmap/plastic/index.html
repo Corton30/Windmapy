@@ -1,0 +1,29 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Microplastiques • Windmap Océan</title>
+    
+    <link rel="stylesheet" href="css/nathan.css"> 
+    
+    <script src="https://d3js.org/d3.v7.min.js"></script>
+    <script src="https://d3js.org/d3-geo-projection.v4.min.js"></script>
+    <script type="module" src="scripts/main.js"></script>
+</head>
+<body>
+    
+    <div id="controles">
+        <div class="control-group">
+            <label>Nombre de particules : <span id="particle-count-display">3000</span></label>
+            <input type="range" id="particle-slider" min="500" max="8000" step="100" value="3000">
+        </div>
+        
+        <button id="btn-heat">🔥 Heatmap ON</button>
+        <button id="btn-mode"> Mode : Particules</button>
+
+    </div>
+
+    <div id="ma-carte"></div>
+</body>
+</html>

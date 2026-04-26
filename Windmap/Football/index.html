@@ -1,0 +1,173 @@
+<!doctype html>
+<html lang="fr">
+  <head>
+    <!-- Métadonnées et configuration -->
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Windmap L3 - Suivi de Football</title>
+    <!-- Feuille de style principale -->
+    <link rel="stylesheet" href="css/style.css" />
+  </head>
+  <body>
+    <!-- Conteneur principal de l'application -->
+    <main class="app-shell">
+      <!-- En-tête avec titre et description -->
+      <header class="app-header">
+        <h1>Visualisation de Suivi Football</h1>
+        <p>
+          Configuration Canvas pour particules de joueurs et cartes de chaleur.
+        </p>
+      </header>
+
+      <!-- Zone avec le canvas et les contrôles latéraux -->
+      <section
+        class="canvas-panel"
+        aria-label="Zone canvas du terrain de football"
+      >
+        <!-- Panneau de contrôles -->
+        <aside
+          class="controls-panel"
+          aria-label="Commandes de lecture et du joueur"
+        >
+          <!-- Sélecteur de match -->
+          <label>
+            Match
+            <select id="matchSelect">
+              <option value="Sample_Game_1" selected>Sample Game 1</option>
+              <option value="Sample_Game_2">Sample Game 2</option>
+            </select>
+          </label>
+
+          <!-- Mode d'affichage de la heatmap -->
+          <label>
+            Mode Heatmap
+            <select id="heatmapModeSelect">
+              <option value="player">Joueur solo</option>
+              <option value="team" selected>Equipe complete</option>
+              <option value="both">Deux equipes</option>
+            </select>
+          </label>
+
+          <label>
+            Equipe
+            <select id="teamSelect">
+              <option value="Home">Domicile</option>
+              <option value="Away">Exterieur</option>
+            </select>
+          </label>
+
+          <label>
+            Joueur
+            <select id="playerSelect"></select>
+          </label>
+
+          <div class="player-controls" aria-label="Mini lecteur">
+            <button
+              id="goStartBtn"
+              class="player-btn"
+              type="button"
+              aria-label="Aller au debut"
+              title="Aller au debut"
+            >
+              |&lt;
+            </button>
+            <button
+              id="rewindBtn"
+              class="player-btn"
+              type="button"
+              aria-label="Reculer 5 secondes"
+              title="Reculer 5 secondes"
+            >
+              &lt;&lt;
+            </button>
+            <button
+              id="stepBackBtn"
+              class="player-btn"
+              type="button"
+              aria-label="Reculer 2 frames"
+              title="Reculer 2 frames"
+            >
+              &lt;
+            </button>
+            <button
+              id="playPauseBtn"
+              class="player-btn player-main"
+              type="button"
+              aria-label="Lecture pause"
+              title="Lecture pause"
+            >
+              ||
+            </button>
+            <button
+              id="stepForwardBtn"
+              class="player-btn"
+              type="button"
+              aria-label="Avancer 2 frames"
+              title="Avancer 2 frames"
+            >
+              &gt;
+            </button>
+            <button
+              id="fastForwardBtn"
+              class="player-btn"
+              type="button"
+              aria-label="Avancer 5 secondes"
+              title="Avancer 5 secondes"
+            >
+              &gt;&gt;
+            </button>
+            <button
+              id="goEndBtn"
+              class="player-btn"
+              type="button"
+              aria-label="Aller a la fin"
+              title="Aller a la fin"
+            >
+              &gt;|
+            </button>
+          </div>
+
+          <!-- Bouton pour masquer/afficher la balle -->
+          <button id="ballToggleBtn" type="button">Masquer balle</button>
+
+          <!-- Bouton pour masquer/afficher les particules -->
+          <button id="particlesToggleBtn" type="button">
+            Masquer particules
+          </button>
+
+          <label>
+            Vitesse
+            <select id="speedSelect">
+              <option value="0.5">0.5x</option>
+              <option value="1" selected>1x</option>
+              <option value="1.5">1.5x</option>
+              <option value="2">2x</option>
+            </select>
+          </label>
+
+          <!-- Slider pour naviguer dans la vidéo -->
+          <label class="controls-grow">
+            Minute
+            <input
+              id="frameSlider"
+              type="range"
+              min="0"
+              max="0"
+              value="0"
+              step="1"
+            />
+          </label>
+
+          <!-- Affichage des infos de la frame courante -->
+          <span id="frameInfo" class="frame-info">Aucune donnee</span>
+        </aside>
+
+        <!-- Canvas du terrain de football -->
+        <canvas id="pitchCanvas"></canvas>
+      </section>
+    </main>
+
+    <!-- Chargement du module principal (app.js) -->
+    <script type="module" src="js/app.js"></script>
+  </body>
+</html>

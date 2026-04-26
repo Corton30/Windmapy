@@ -1,0 +1,154 @@
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+    font-family: 'Inter', sans-serif;
+}
+
+body {
+    display: flex;
+    height: 100vh;
+    background-color: #0a0a0a; /* Deep dark background */
+    color: #ffffff;
+    overflow: hidden; /* Prevent scrolling on the main page */
+}
+
+/* --- SIDEBAR --- */
+.sidebar {
+    width: 260px;
+    background-color: #121212;
+    border-right: 1px solid #2a2a2a;
+    display: flex;
+    flex-direction: column;
+    padding: 2rem 1.5rem;
+    z-index: 10;
+    transition: margin-left 0.3s ease-in-out;
+}
+
+.sidebar.collapsed {
+    margin-left: -260px;
+}
+
+.sidebar.header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    margin-bottom: 2rem;
+}
+
+.brand h1 {
+    font-size: 1.5rem;
+    font-weight: 600;
+    letter-spacing: 1px;
+    margin-bottom: 0;
+}
+
+.toggle-btn {
+    background: transparent;
+    border: none;
+    color: #fff;
+    font-size: 1.5rem;
+    cursor: pointer;
+    padding: 0 5px;
+    transition: color 0.2s;
+}
+
+.toggle-btn:hover {
+    color: #ff5500;
+}
+
+#floating-toggle {
+    position: absolute;
+    top: 20px;
+    left: 20px;
+    z-index: 20;
+    background: #1a1a1a;
+    border: 1px solid #333;
+    border-radius: 5px;
+    padding: 8px 12px;
+    display: none; 
+}
+
+#floating-toggle.visible {
+    display: block;
+}
+
+.brand span {
+    color: #ff5500; /* Use your project's accent color */
+}
+
+.nav-links {
+    list-style: none;
+    flex-grow: 1;
+}
+
+.nav-links li {
+    margin-bottom: 0.5rem;
+}
+
+.nav-links button {
+    width: 100%;
+    text-align: left;
+    background: transparent;
+    border: none;
+    color: #888;
+    padding: 12px 16px;
+    font-size: 1rem;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.nav-links button:hover {
+    background-color: #1e1e1e;
+    color: #fff;
+}
+
+/* The Active State */
+.nav-links button.active {
+    background-color: rgba(255, 85, 0, 0.1); /* Subtle accent background */
+    color: #ff5500;
+    font-weight: 600;
+    border-left: 3px solid #ff5500;
+}
+
+.credits {
+    font-size: 0.75rem;
+    color: #555;
+    line-height: 1.5;
+}
+
+/* --- CONTENT AREA & IFRAME --- */
+.content {
+    flex-grow: 1;
+    position: relative;
+    background-color: #000;
+}
+
+iframe {
+    width: 100%;
+    height: 100%;
+    border: none;
+    /* Optional: A subtle fade-in animation for the iframe */
+    animation: fadeIn 0.5s ease-in-out;
+}
+
+@keyframes fadeIn {
+    from { opacity: 0; }
+    to { opacity: 1; }
+}
+
+/* A simple loading state to hide the iframe flash */
+#loader {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    color: #ff5500;
+    font-weight: 600;
+    z-index: 5;
+}
+
+.hidden {
+    display: none !important;
+}
